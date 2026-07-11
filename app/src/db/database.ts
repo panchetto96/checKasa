@@ -75,8 +75,10 @@ export async function getProperty(id: string): Promise<Property | null> {
 /** Elimina la proprietà e tutte le sue stanze: SQLite qui non ha vincoli di FK a cascata. */
 export async function deleteProperty(id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync('DELETE FROM rooms WHERE property_id = ?', id);
-  await db.runAsync('DELETE FROM properties WHERE id = ?', id);
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM rooms WHERE property_id = ?', id);
+    await db.runAsync('DELETE FROM properties WHERE id = ?', id);
+  });
 }
 
 interface RoomRow {
