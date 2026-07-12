@@ -32,6 +32,7 @@ export default function SignatureScreen({ navigation, route }: Props) {
       await insertSignature({ id: newId(), sessionId, uri, createdAt: new Date().toISOString() });
       navigation.goBack();
     } catch (err) {
+      console.error('saveSignature failed:', err);
       Alert.alert('Errore', 'Non è stato possibile salvare la firma. Riprova.');
     } finally {
       setSaving(false);

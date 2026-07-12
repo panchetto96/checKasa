@@ -12,6 +12,11 @@ export interface EmbeddedPhoto {
   base64: string;
 }
 
+export interface EmbeddedSignature {
+  base64: string;
+  createdAt: string;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -29,7 +34,7 @@ export function buildReportHtml(
   rooms: Room[],
   photos: EmbeddedPhoto[],
   notes: RoomNote[],
-  signatureBase64: string | null
+  signature: EmbeddedSignature | null
 ): string {
   const roomSections = rooms
     .map((room) => {
@@ -55,11 +60,11 @@ export function buildReportHtml(
     })
     .join('');
 
-  const signatureHtml = signatureBase64
+  const signatureHtml = signature
     ? `<div class="signature">
         <p><strong>Firma dell'altra parte</strong></p>
-        <img src="data:image/png;base64,${signatureBase64}" class="signature-img" />
-        <p class="signature-date">Raccolta il ${formatDate(session.completedAt ?? session.createdAt)}</p>
+        <img src="data:image/png;base64,${signature.base64}" class="signature-img" />
+        <p class="signature-date">Raccolta il ${formatDate(signature.createdAt)}</p>
       </div>`
     : `<p class="unilateral">Documento redatto unilateralmente: l'altra parte non era presente o non ha firmato.
         Secondo le fonti legali italiane, si raccomanda comunque di formalizzare l'invio di questo documento
@@ -130,9 +135,13 @@ export async function exportReport(
     if (base64) embeddedPhotos.push({ roomId: photo.roomId, base64 });
   }
 
-  const signatureBase64 = signature ? await readFileAsBase64(signature.uri) : null;
+  let embeddedSignature: EmbeddedSignature | null = null;
+  if (signature) {
+    const base64 = await readFileAsBase64(signature.uri);
+    if (base64) embeddedSignature = { base64, createdAt: signature.createdAt };
+  }
 
-  const html = buildReportHtml(property, session, rooms, embeddedPhotos, notes, signatureBase64);
+  const html = buildReportHtml(property, session, rooms, embeddedPhotos, notes, embeddedSignature);
   const { uri } = await Print.printToFileAsync({ html });
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, {

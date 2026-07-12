@@ -43,9 +43,20 @@ describe('buildReportHtml', () => {
   });
 
   it("include l'immagine della firma quando presente, senza la riga sul verbale unilaterale", () => {
-    const html = buildReportHtml(property, session, rooms, [], [], 'ZmFrZS1iYXNlNjQ=');
+    const html = buildReportHtml(property, session, rooms, [], [], {
+      base64: 'ZmFrZS1iYXNlNjQ=',
+      createdAt: '2026-01-01T11:30:00.000Z',
+    });
     expect(html).toContain('data:image/png;base64,ZmFrZS1iYXNlNjQ=');
     expect(html).not.toContain('redatto unilateralmente');
+  });
+
+  it('mostra la data reale della firma, non quella della sessione', () => {
+    const html = buildReportHtml(property, session, rooms, [], [], {
+      base64: 'ZmFrZS1iYXNlNjQ=',
+      createdAt: '2026-03-15T09:00:00.000Z',
+    });
+    expect(html).toContain('15 marzo 2026');
   });
 
   it('include la foto di una stanza come immagine base64', () => {
