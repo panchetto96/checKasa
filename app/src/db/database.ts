@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import { Property, Room, RoomType } from '../types/property';
 import { Session, SessionType, SessionStatus, Photo, RoomNote } from '../types/session';
+import { Signature } from '../types/signature';
 
 // Nome file locale sul dispositivo: nessuna sincronizzazione, nessun server.
 export const DB_NAME = 'checkcasa.db';
@@ -54,6 +55,13 @@ export async function initDatabase(): Promise<void> {
       created_at TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_session_room ON notes(session_id, room_id);
+    CREATE TABLE IF NOT EXISTS signatures (
+      id TEXT PRIMARY KEY NOT NULL,
+      session_id TEXT NOT NULL,
+      uri TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_signatures_session ON signatures(session_id);
   `);
 }
 
@@ -96,12 +104,16 @@ export async function getProperty(id: string): Promise<Property | null> {
   return row ? rowToProperty(row) : null;
 }
 
-/** Elimina la proprietà, le sue stanze, e tutte le sessioni/foto/note collegate: SQLite qui non ha vincoli di FK a cascata. */
+/** Elimina la proprietà, le sue stanze, e tutte le sessioni/foto/note/firme collegate: SQLite qui non ha vincoli di FK a cascata. */
 export async function deleteProperty(id: string): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM photos WHERE session_id IN (SELECT id FROM sessions WHERE property_id = ?)', id);
     await db.runAsync('DELETE FROM notes WHERE session_id IN (SELECT id FROM sessions WHERE property_id = ?)', id);
+    await db.runAsync(
+      'DELETE FROM signatures WHERE session_id IN (SELECT id FROM sessions WHERE property_id = ?)',
+      id
+    );
     await db.runAsync('DELETE FROM sessions WHERE property_id = ?', id);
     await db.runAsync('DELETE FROM rooms WHERE property_id = ?', id);
     await db.runAsync('DELETE FROM properties WHERE id = ?', id);
@@ -211,6 +223,15 @@ export async function getSession(id: string): Promise<Session | null> {
 export async function completeSession(id: string, completedAt: string): Promise<void> {
   const db = await getDb();
   await db.runAsync(`UPDATE sessions SET status = 'completata', completed_at = ? WHERE id = ?`, completedAt, id);
+}
+
+export async function getSessionsForProperty(propertyId: string): Promise<Session[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<SessionRow>(
+    'SELECT * FROM sessions WHERE property_id = ? ORDER BY created_at DESC',
+    propertyId
+  );
+  return rows.map(rowToSession);
 }
 
 interface PhotoRow {
@@ -331,4 +352,49 @@ export async function getNoteForRoom(sessionId: string, roomId: string): Promise
     roomId
   );
   return row ? rowToNote(row) : null;
+}
+
+interface SignatureRow {
+  id: string;
+  session_id: string;
+  uri: string;
+  created_at: string;
+}
+
+function rowToSignature(row: SignatureRow): Signature {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    uri: row.uri,
+    createdAt: row.created_at,
+  };
+}
+
+export async function insertSignature(signature: Signature): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT INTO signatures (id, session_id, uri, created_at) VALUES (?, ?, ?, ?)`,
+    signature.id,
+    signature.sessionId,
+    signature.uri,
+    signature.createdAt
+  );
+}
+
+export async function getSignatureForSession(sessionId: string): Promise<Signature | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<SignatureRow>('SELECT * FROM signatures WHERE session_id = ?', sessionId);
+  return row ? rowToSignature(row) : null;
+}
+
+/** Tutte le firme di tutte le sessioni di una proprietà — usata per ripulire i file quando la proprietà viene eliminata. */
+export async function getSignaturesForProperty(propertyId: string): Promise<Signature[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<SignatureRow>(
+    `SELECT signatures.* FROM signatures
+     JOIN sessions ON sessions.id = signatures.session_id
+     WHERE sessions.property_id = ?`,
+    propertyId
+  );
+  return rows.map(rowToSignature);
 }
