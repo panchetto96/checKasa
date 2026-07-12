@@ -1,29 +1,30 @@
 import { useColorScheme } from 'react-native';
 
-// Palette placeholder: coerente nella forma con quella di Quiete (stessi token),
-// ma colori propri di CheckCasa. Va rivista con una passata di design dedicata
-// prima del lancio pubblico — non blocca lo sviluppo dell'MVP.
+// Palette definita con /impeccable colorize: neutri ritinti verso la stessa
+// famiglia cromatica (teal-verde) dell'accent, invece del grigio-blu slate
+// scollegato di prima — coerenza sottile tra brand e superfici, non un
+// restyling vistoso. Sistema "restrained": un solo accent + un danger.
 const dark = {
-  bg: '#10151B',
-  surface: '#171F29',
-  surface2: '#1E2733',
-  text: '#E7EAEE',
-  muted: '#93A0AC',
-  accent: '#3FA796',
-  accentInk: '#06201C',
-  line: '#26313D',
+  bg: '#0D1614',
+  surface: '#141F1C',
+  surface2: '#1A2724',
+  text: '#E7EBE9',
+  muted: '#93A19C',
+  accent: '#38A68F',
+  accentInk: '#062019',
+  line: '#233330',
   danger: '#E5484D',
 };
 
 const light = {
-  bg: '#F5F6F4',
+  bg: '#F2F6F4',
   surface: '#FFFFFF',
-  surface2: '#ECEFEE',
-  text: '#14181C',
-  muted: '#5B6670',
-  accent: '#1F7A6C',
+  surface2: '#E7EFEC',
+  text: '#141C1A',
+  muted: '#5C6D68',
+  accent: '#1C7A67',
   accentInk: '#FFFFFF',
-  line: '#DCE1E0',
+  line: '#D7E3DF',
   danger: '#C4302B',
 };
 
