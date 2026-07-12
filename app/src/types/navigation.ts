@@ -5,4 +5,7 @@ export type RootStackParamList = {
   NuovaStanza: { propertyId: string };
   Sessione: { sessionId: string };
   CatturaStanza: { sessionId: string; roomId: string };
+  Cronologia: { propertyId: string };
+  RiepilogoSessione: { sessionId: string };
+  Firma: { sessionId: string };
 };

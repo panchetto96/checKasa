@@ -11,12 +11,14 @@ import {
   getInProgressSession,
   insertSession,
   getPhotosForProperty,
+  getSignaturesForProperty,
 } from '../db/database';
 import { roomTypeInfo } from '../types/property';
 import type { Property, Room } from '../types/property';
 import type { SessionType } from '../types/session';
 import { newId } from '../lib/id';
 import { deletePhotoFile } from '../lib/photos';
+import { deleteSignatureFile } from '../lib/signature';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DettaglioProprieta'>;
@@ -62,9 +64,12 @@ export default function PropertyDetailScreen({ navigation, route }: Props) {
         text: 'Elimina',
         style: 'destructive',
         onPress: async () => {
-          const photos = await getPhotosForProperty(id);
+          const [photos, signatures] = await Promise.all([getPhotosForProperty(id), getSignaturesForProperty(id)]);
           await deleteProperty(id);
-          await Promise.all(photos.map((photo) => deletePhotoFile(photo.uri)));
+          await Promise.all([
+            ...photos.map((photo) => deletePhotoFile(photo.uri)),
+            ...signatures.map((signature) => deleteSignatureFile(signature.uri)),
+          ]);
           navigation.goBack();
         },
       },
@@ -122,6 +127,12 @@ export default function PropertyDetailScreen({ navigation, route }: Props) {
         </View>
       )}
 
+      {rooms.length > 0 && (
+        <Pressable style={styles.historyLink} onPress={() => navigation.navigate('Cronologia', { propertyId: id })}>
+          <Text style={styles.historyLinkText}>Vedi cronologia sessioni →</Text>
+        </Pressable>
+      )}
+
       {rooms.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>🚪</Text>
@@ -170,7 +181,7 @@ function makeStyles(theme: Theme) {
     header: { paddingHorizontal: 20, paddingTop: 64, paddingBottom: 20 },
     title: { fontSize: 24, fontWeight: '700', color: theme.text },
     subtitle: { fontSize: 13, color: theme.muted, marginTop: 4 },
-    sessionButtons: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 16 },
+    sessionButtons: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 12 },
     sessionBtn: {
       flex: 1,
       backgroundColor: theme.accent,
@@ -180,6 +191,8 @@ function makeStyles(theme: Theme) {
     },
     sessionBtnDisabled: { opacity: 0.6 },
     sessionBtnText: { color: theme.accentInk, fontSize: 14, fontWeight: '700' },
+    historyLink: { paddingHorizontal: 20, marginBottom: 16 },
+    historyLinkText: { color: theme.accent, fontSize: 13, fontWeight: '600' },
     empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
     emptyIcon: { fontSize: 40, marginBottom: 16 },
     emptyText: { color: theme.muted, textAlign: 'center', fontSize: 15, lineHeight: 22, maxWidth: 280 },
