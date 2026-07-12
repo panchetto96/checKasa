@@ -32,7 +32,8 @@
           "cameraPermission": "CheckCasa usa la fotocamera per fotografare lo stato dell'immobile durante il check-in e il check-out.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }
