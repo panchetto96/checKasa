@@ -23,6 +23,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-sqlite"]
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CheckCasa accede alle tue foto per allegarle alla documentazione di check-in e check-out.",
+          "cameraPermission": "CheckCasa usa la fotocamera per fotografare lo stato dell'immobile durante il check-in e il check-out.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }
