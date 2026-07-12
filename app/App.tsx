@@ -11,6 +11,8 @@ import PropertiesScreen from './src/screens/PropertiesScreen';
 import NewPropertyScreen from './src/screens/NewPropertyScreen';
 import PropertyDetailScreen from './src/screens/PropertyDetailScreen';
 import NewRoomScreen from './src/screens/NewRoomScreen';
+import SessionScreen from './src/screens/SessionScreen';
+import RoomCaptureScreen from './src/screens/RoomCaptureScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -47,6 +49,8 @@ function AppNavigator() {
         <Stack.Screen name="NuovaProprieta" component={NewPropertyScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="DettaglioProprieta" component={PropertyDetailScreen} />
         <Stack.Screen name="NuovaStanza" component={NewRoomScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="Sessione" component={SessionScreen} />
+        <Stack.Screen name="CatturaStanza" component={RoomCaptureScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
