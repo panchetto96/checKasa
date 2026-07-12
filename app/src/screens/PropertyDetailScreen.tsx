@@ -3,9 +3,20 @@ import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, Theme } from '../theme/colors';
-import { getProperty, getRoomsForProperty, deleteRoom, deleteProperty } from '../db/database';
+import {
+  getProperty,
+  getRoomsForProperty,
+  deleteRoom,
+  deleteProperty,
+  getInProgressSession,
+  insertSession,
+  getPhotosForProperty,
+} from '../db/database';
 import { roomTypeInfo } from '../types/property';
 import type { Property, Room } from '../types/property';
+import type { SessionType } from '../types/session';
+import { newId } from '../lib/id';
+import { deletePhotoFile } from '../lib/photos';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DettaglioProprieta'>;
@@ -16,6 +27,7 @@ export default function PropertyDetailScreen({ navigation, route }: Props) {
   const { id } = route.params;
   const [property, setProperty] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [startingSession, setStartingSession] = useState(false);
 
   const load = useCallback(async () => {
     const [loadedProperty, loadedRooms] = await Promise.all([getProperty(id), getRoomsForProperty(id)]);
@@ -50,11 +62,34 @@ export default function PropertyDetailScreen({ navigation, route }: Props) {
         text: 'Elimina',
         style: 'destructive',
         onPress: async () => {
+          const photos = await getPhotosForProperty(id);
           await deleteProperty(id);
+          await Promise.all(photos.map((photo) => deletePhotoFile(photo.uri)));
           navigation.goBack();
         },
       },
     ]);
+  }
+
+  async function startSession(type: SessionType) {
+    if (startingSession) return;
+    setStartingSession(true);
+    try {
+      const existing = await getInProgressSession(id, type);
+      const sessionId = existing?.id ?? newId();
+      if (!existing) {
+        await insertSession({
+          id: sessionId,
+          propertyId: id,
+          type,
+          status: 'in_corso',
+          createdAt: new Date().toISOString(),
+        });
+      }
+      navigation.navigate('Sessione', { sessionId });
+    } finally {
+      setStartingSession(false);
+    }
   }
 
   if (!property) {
@@ -67,6 +102,25 @@ export default function PropertyDetailScreen({ navigation, route }: Props) {
         <Text style={styles.title}>{property.name}</Text>
         {property.address ? <Text style={styles.subtitle}>{property.address}</Text> : null}
       </View>
+
+      {rooms.length > 0 && (
+        <View style={styles.sessionButtons}>
+          <Pressable
+            style={[styles.sessionBtn, startingSession && styles.sessionBtnDisabled]}
+            onPress={() => startSession('check-in')}
+            disabled={startingSession}
+          >
+            <Text style={styles.sessionBtnText}>Inizia check-in</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.sessionBtn, startingSession && styles.sessionBtnDisabled]}
+            onPress={() => startSession('check-out')}
+            disabled={startingSession}
+          >
+            <Text style={styles.sessionBtnText}>Inizia check-out</Text>
+          </Pressable>
+        </View>
+      )}
 
       {rooms.length === 0 ? (
         <View style={styles.empty}>
@@ -116,6 +170,16 @@ function makeStyles(theme: Theme) {
     header: { paddingHorizontal: 20, paddingTop: 64, paddingBottom: 20 },
     title: { fontSize: 24, fontWeight: '700', color: theme.text },
     subtitle: { fontSize: 13, color: theme.muted, marginTop: 4 },
+    sessionButtons: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 16 },
+    sessionBtn: {
+      flex: 1,
+      backgroundColor: theme.accent,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    sessionBtnDisabled: { opacity: 0.6 },
+    sessionBtnText: { color: theme.accentInk, fontSize: 14, fontWeight: '700' },
     empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
     emptyIcon: { fontSize: 40, marginBottom: 16 },
     emptyText: { color: theme.muted, textAlign: 'center', fontSize: 15, lineHeight: 22, maxWidth: 280 },

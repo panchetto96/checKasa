@@ -3,4 +3,6 @@ export type RootStackParamList = {
   NuovaProprieta: undefined;
   DettaglioProprieta: { id: string };
   NuovaStanza: { propertyId: string };
+  Sessione: { sessionId: string };
+  CatturaStanza: { sessionId: string; roomId: string };
 };
