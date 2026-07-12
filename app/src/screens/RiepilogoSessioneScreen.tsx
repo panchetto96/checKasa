@@ -63,6 +63,7 @@ export default function RiepilogoSessioneScreen({ navigation, route }: Props) {
     try {
       await exportReport(property, session, rooms, photos, notes, signature);
     } catch (err) {
+      console.error('exportReport failed:', err);
       Alert.alert('Errore', 'Non è stato possibile generare il PDF. Riprova.');
     } finally {
       setExporting(false);
