@@ -1,0 +1,9 @@
+# Configurazione locale degli strumenti di sviluppo (agenti, skill, hook)
+.claude/
+.github/skills/
+.github/hooks/
+.superpowers/
+
+# Variabili d'ambiente
+.env
+.env.*
